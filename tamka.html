@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Happy New Year 2026</title>
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    background:black;
+}
+canvas{display:block}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+onresize = ()=>{canvas.width=innerWidth;canvas.height=innerHeight;}
+
+const messages = [
+ "Happy New Year",
+ "Chúc Mừng",
+ "Năm mới 2026",
+ "An Khang",
+ "Thịnh Vượng",
+ 'Happy New Year " Tamka "'
+];
+
+let particles=[], fireworks=[], imgs=[], msgIndex=-1;
+
+// ===== LOAD IMAGE =====
+const img = new Image();
+img.src = "photo.png";
+img.onload = ()=>{
+ for(let i=0;i<36;i++){
+  imgs.push({
+   x:Math.random()*canvas.width,
+   y:Math.random()*canvas.height,
+   a:Math.random()*360,
+   s:0.025 + Math.random()*0.015
+});
+ }
+};
+
+// ===== COUNTDOWN =====
+let count=5;
+function countdown(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="white";
+ ctx.font="bold 160px Arial";
+ ctx.textAlign="center";
+ ctx.fillText(count,canvas.width/2,canvas.height/2);
+ count--;
+ if(count>=0)setTimeout(countdown,1000);
+ else nextText();
+}
+
+// ===== TEXT DOTS =====
+function createText(text){
+ particles=[];
+ let c=document.createElement("canvas");
+ let ct=c.getContext("2d");
+ c.width=canvas.width;
+ c.height=canvas.height;
+ ct.fillStyle = "white";
+ct.textAlign = "center";
+
+// tự động giảm font nếu chữ dài
+let fontSize = 120;
+ct.font = `bold ${fontSize}px Arial`;
+
+while (ct.measureText(text).width > canvas.width * 0.85) {
+    fontSize -= 4;
+    ct.font = `bold ${fontSize}px Arial`;
+}
+
+ct.fillText(text, c.width / 2, c.height / 2);
+
+ let d=ct.getImageData(0,0,c.width,c.height).data;
+ for(let y=0;y<c.height;y+=4)
+ for(let x=0;x<c.width;x+=4){
+  let i=(y*c.width+x)*4;
+  if(d[i+3]>150)
+   particles.push({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    tx:x,ty:y,
+    c:`hsl(${Math.random()*360},100%,60%)`
+   });
+ }
+}
+
+// ===== FIREWORK =====
+function firework(){
+ fireworks.push({
+  x:Math.random()*canvas.width,
+  y:canvas.height,
+  ty:Math.random()*canvas.height/2,
+  p:[]
+ });
+}
+function explode(f){
+ for(let i=0;i<80;i++)
+  f.p.push({
+   x:f.x,y:f.y,
+   vx:Math.cos(i)*Math.random()*4,
+   vy:Math.sin(i)*Math.random()*4,
+   l:60,
+   c:`hsl(${Math.random()*360},100%,60%)`
+  });
+}
+
+// ===== MAIN LOOP =====
+function animate(){
+ ctx.fillStyle="rgba(0,0,0,0.25)";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ // text
+ particles.forEach(p=>{
+  p.x+=(p.tx-p.x)*0.08;
+  p.y+=(p.ty-p.y)*0.08;
+  ctx.fillStyle=p.c;
+  ctx.fillRect(p.x,p.y,2,2);
+ });
+
+ // fireworks
+ fireworks.forEach((f,i)=>{
+  if(!f.e){
+   f.y-=6;
+   ctx.fillStyle="white";
+   ctx.fillRect(f.x,f.y,2,2);
+   if(f.y<=f.ty){f.e=true;explode(f);}
+  }else{
+   f.p.forEach(pp=>{
+    pp.x+=pp.vx;pp.y+=pp.vy;pp.l--;
+    ctx.fillStyle=pp.c;
+    ctx.fillRect(pp.x,pp.y,2,2);
+   });
+  }
+  if(f.e&&f.p.every(p=>p.l<=0))fireworks.splice(i,1);
+ });
+
+ // image floating
+ imgs.forEach(o=>{
+  o.a += 2.1;
+  o.x+=Math.cos(o.a*Math.PI/180)*0.5;
+  o.y+=Math.sin(o.a*Math.PI/180)*0.5;
+  ctx.save();
+  ctx.translate(o.x,o.y);
+  ctx.rotate(o.a*Math.PI/180);
+  ctx.scale(o.s,o.s);
+  ctx.drawImage(img,-img.width/2,-img.height/2);
+  ctx.restore();
+ });
+
+ requestAnimationFrame(animate);
+}
+
+// ===== TEXT FLOW =====
+function nextText(){
+ msgIndex++;
+ if(msgIndex>=messages.length)return;
+ createText(messages[msgIndex]);
+ for(let i=0;i<5;i++)firework();
+ setTimeout(nextText,2000);
+}
+
+// ===== START =====
+countdown();
+setInterval(firework,900);
+animate();
+</script>
+
+</body>
+</html>
